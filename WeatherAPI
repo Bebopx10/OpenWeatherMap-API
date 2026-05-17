@@ -1,7 +1,7 @@
 import requests
 import os
 from datetime import datetime
-from dotenv import load_dotenv   # Remove this line if you don't use .env
+from dotenv import load_dotenv
 
 # Load API key from .env file (recommended)
 load_dotenv()
