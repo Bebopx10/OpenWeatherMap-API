@@ -1,0 +1,87 @@
+import requests
+import os
+from datetime import datetime
+from dotenv import load_dotenv   # Remove this line if you don't use .env
+
+# Load API key from .env file (recommended)
+load_dotenv()
+API_KEY = os.getenv("OWM_API_KEY") or "f88c295e5c0a7255b6c8b3e45c410ee1"
+
+BASE_URL = "https://api.openweathermap.org/data/2.5/weather"
+
+def get_weather(city, units="metric"):
+    """Fetch weather data from OpenWeatherMap API."""
+    params = {
+        "q": city,
+        "appid": API_KEY,
+        "units": units
+    }
+    
+    try:
+        response = requests.get(BASE_URL, params=params, timeout=10)
+        response.raise_for_status()
+        return response.json()
+    except requests.exceptions.HTTPError:
+        if response.status_code == 404:
+            print("❌ City not found.")
+        else:
+            print(f"❌ API Error: {response.status_code}")
+        return None
+    except requests.exceptions.RequestException as e:
+        print(f"❌ Network error: {e}")
+        return None
+
+def display_weather(data, units):
+    """Display weather information nicely."""
+    if not data or data.get("cod") != 200:
+        print("❌ Could not retrieve weather data.")
+        return
+
+    city = data["name"]
+    country = data["sys"]["country"]
+    temp = data["main"]["temp"]
+    feels_like = data["main"]["feels_like"]
+    humidity = data["main"]["humidity"]
+    wind_speed = data["wind"].get("speed", "N/A")
+    description = data["weather"][0]["description"].capitalize()
+    
+    sunrise = datetime.fromtimestamp(data["sys"]["sunrise"]).strftime("%I:%M %p")
+    sunset = datetime.fromtimestamp(data["sys"]["sunset"]).strftime("%I:%M %p")
+    
+    unit_symbol = "°C" if units == "metric" else "°F"
+    wind_unit = "m/s" if units == "metric" else "mph"
+    
+    print("\n" + "="*55)
+    print(f"🌤  Weather Report for {city}, {country}")
+    print("="*55)
+    print(f"📍 Condition    : {description}")
+    print(f"🌡️  Temperature  : {temp}{unit_symbol} (feels like {feels_like}{unit_symbol})")
+    print(f"💧 Humidity     : {humidity}%")
+    print(f"🌬️  Wind         : {wind_speed} {wind_unit}")
+    print(f"🌅 Sunrise      : {sunrise}")
+    print(f"🌇 Sunset       : {sunset}")
+    print("="*55)
+
+def main():
+    print("🌍 Welcome to Console Weather App!\n")
+    
+    while True:
+        print("-" * 40)
+        city = input("Enter city name (or 'exit' to quit): ").strip()
+        
+        if city.lower() in ["exit", "quit", "q", ""]:
+            print("👋 Thank you for using the Weather App!")
+            break
+        
+        # Choose units
+        unit_input = input("Celsius (c) or Fahrenheit (f)? [c/f]: ").strip().lower()
+        units = "metric" if unit_input == "c" else "imperial"
+        
+        print(f"🔍 Fetching weather for '{city}'...")
+        data = get_weather(city, units)
+        
+        if data:
+            display_weather(data, units)
+
+if __name__ == "__main__":
+    main()
